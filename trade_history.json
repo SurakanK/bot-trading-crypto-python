@@ -1,0 +1,8 @@
+{
+    "initial_balance": 1000.0,
+    "current_balance": 1000.0,
+    "total_trades": 0,
+    "winning_trades": 0,
+    "total_profit_loss": 0.0,
+    "trade_history": []
+} 
