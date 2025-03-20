@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  trading-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
+    volumes:
+      - .:/app
+      - ./models:/app/models
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+  trading-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    volumes:
+      - .:/app
+      - ./models:/app/models
+    env_file:
+      - .env
+    ports:
+      - "8501:8501"  # สำหรับ Streamlit UI
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    depends_on:
+      - trading-bot 
