@@ -156,9 +156,8 @@ class TradingBot:
         
         # RSI หลายช่วงเวลา
         print("   ➕ RSI")
-        df['RSI'] = ta.momentum.RSIIndicator(df['close'], window=14).rsi()
-        df['RSI_4'] = ta.momentum.RSIIndicator(df['close'], window=4).rsi()
-        df['RSI_10'] = ta.momentum.RSIIndicator(df['close'], window=10).rsi()
+        df['RSI_1'] = ta.momentum.RSIIndicator(df['close'], window=1).rsi()
+        df['RSI_3'] = ta.momentum.RSIIndicator(df['close'], window=3).rsi()
         
         # MACD
         print("   ➕ MACD")
@@ -166,10 +165,10 @@ class TradingBot:
         df['MACD'] = macd.macd()
         df['MACD_signal'] = macd.macd_signal()
         df['MACD_diff'] = macd.macd_diff()
-        
-        # Bollinger Bands ระยะสั้น
+
+        # Bollinger Bands
         print("   ➕ Bollinger Bands")
-        bollinger = ta.volatility.BollingerBands(df['close'], window=1)
+        bollinger = ta.volatility.BollingerBands(df['close'], window=20)  # เปลี่ยนเป็น window=20 แท่งเทียน
         df['BB_high_1'] = bollinger.bollinger_hband()
         df['BB_low_1'] = bollinger.bollinger_lband()
         df['BB_mid_1'] = bollinger.bollinger_mavg()
@@ -184,36 +183,35 @@ class TradingBot:
         
         # Stochastic Oscillator
         print("   ➕ Stochastic")
-        stoch = ta.momentum.StochasticOscillator(df['high'], df['low'], df['close'])
+        stoch = ta.momentum.StochasticOscillator(df['high'], df['low'], df['close'], window=3, smooth_window=2)
         df['STOCH_k'] = stoch.stoch()
         df['STOCH_d'] = stoch.stoch_signal()
         
         # ATR (Average True Range)
         print("   ➕ ATR")
         df['ATR'] = ta.volatility.AverageTrueRange(df['high'], df['low'], df['close']).average_true_range()
-        
+
         # ROC (Rate of Change)
         print("   ➕ ROC")
-        df['ROC'] = ta.momentum.ROCIndicator(df['close']).roc()
-        
+        df['ROC'] = ta.momentum.ROCIndicator(df['close'], window=1).roc()
+
         # Volume Indicators
         print("   ➕ Volume Indicators")
         df['OBV'] = ta.volume.OnBalanceVolumeIndicator(df['close'], df['volume']).on_balance_volume()
-        
+
         # VWAP (Volume Weighted Average Price)
         print("   ➕ VWAP")
         df['VWAP'] = (df['volume'] * (df['high'] + df['low'] + df['close']) / 3).cumsum() / df['volume'].cumsum()
         
         # Bid-Ask Spread (จำลอง)
-        print("   ➕ Market Depth")
         df['Bid_Ask_Spread'] = df['high'] - df['low']
-        
+
         # Order Book Imbalance (จำลองจากปริมาณการซื้อขาย)
-        df['Order_Book_Imbalance'] = (df['volume'] - df['volume'].rolling(10).mean()) / df['volume'].rolling(10).std()
-        
+        df['Order_Book_Imbalance'] = (df['volume'] - df['volume'].rolling(window=3, min_periods=1).mean()) / df['volume'].rolling(window=3,min_periods=1).std()
+
         # Time of Day (0-23)
         df['time_of_day'] = pd.to_datetime(df['timestamp']).dt.hour
-        
+
         print("✅ คำนวณ Technical Indicators เสร็จสิ้น")
         return df
     
@@ -230,7 +228,7 @@ class TradingBot:
         # เลือก features ที่จะใช้
         feature_columns = [
             'open', 'high', 'low', 'close', 'volume',
-            'RSI', 'RSI_4', 'RSI_10',  # ลด RSI_21 เพราะช้าเกินไป เพิ่ม RSI_10 เพื่อตอบสนองเร็วขึ้น
+            'RSI_1', 'RSI_3',  # ลด RSI_21 เพราะช้าเกินไป เพิ่ม RSI_10 เพื่อตอบสนองเร็วขึ้น
             'MACD', 'MACD_signal', 'MACD_diff',
             'BB_high_1', 'BB_low_1', 'BB_mid_1', 'BB_width_1',  # ลดจาก 20 period เหลือ 3
             'SMA_1', 'SMA_3', 'EMA_1', 'EMA_3',  # แทนที่ SMA_20/50, EMA_20/50 ด้วยค่าระยะสั้น
