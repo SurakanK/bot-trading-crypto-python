@@ -5,8 +5,8 @@
         "use_testnet": true,
         "trade_quantity": 0.0001,
         "trade_interval": "5s",
-        "buy_threshold": 0.55,
-        "sell_threshold": 0.65
+        "buy_threshold": 0.59,
+        "sell_threshold": 0.70
     },
     "model": {
         "num_models": 1,

@@ -95,9 +95,12 @@ def main():
                 st.metric("📊 Win Rate", f"{win_rate:.2f}%")
             
             with col3:
+                # คำนวณกำไร/ขาดทุนจาก current balance และ initial balance
+                profit_loss = trade_data['current_balance'] - trade_data['initial_balance']
                 st.metric(
                     "📈 กำไร/ขาดทุน (USDT)", 
-                    f"{trade_data['total_profit_loss']:.2f}"
+                    f"{profit_loss:.2f}",
+                    f"{(profit_loss/trade_data['initial_balance'])*100:.2f}%"
                 )
             
             # แสดง Crypto Balance
