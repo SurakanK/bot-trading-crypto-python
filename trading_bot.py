@@ -433,19 +433,27 @@ class TradingBot:
         print(f"   ทิศทาง: {'ขึ้น ⬆️' if prediction == 1 else 'ลง ⬇️'}")
         print(f"   ความมั่นใจ: {probability[prediction] * 100:.2f}%")
         
+        # ตรวจสอบว่ามีการเทรดที่เปิดอยู่หรือไม่
+        has_open_trade = any(trade.get('is_open', False) for trade in self.trade_history)
+        
         if prediction == 1 and probability[prediction] > buy_threshold:
+            # ถ้ามีการเทรดที่เปิดอยู่ ให้ข้ามการซื้อ
+            if has_open_trade:
+                print("\n⚠️ มีการเทรดที่เปิดอยู่ ต้องรอขายก่อน")
+                return
+                
             print(f"\n🟢 ส่งคำสั่งซื้อ {quantity} {self.symbol}")
             try:
-                # บันทึกราคาก่อนเทรด
-                ticker = self.client.get_symbol_ticker(symbol=self.symbol)
-                entry_price = float(ticker['price'])
-                
+                # เปิด order ซื้อ
                 order = self.client.create_order(
                     symbol=self.symbol,
                     side=self.SIDE_BUY,
                     type=self.ORDER_TYPE_MARKET,
                     quantity=quantity
                 )
+                
+                # บันทึกราคาที่ซื้อ
+                entry_price = float(order['fills'][0]['price'])
                 
                 # คำนวณมูลค่าการเทรดและอัพเดทยอดเงิน/crypto
                 trade_value = entry_price * quantity
@@ -463,7 +471,8 @@ class TradingBot:
                     'crypto_balance': self.base_balance,
                     'prediction': 'ราคาจะขึ้น',
                     'confidence': probability[prediction] * 100,
-                    'is_open': True  # เพิ่มฟิลด์เพื่อติดตามว่าเทรดยังเปิดอยู่
+                    'is_open': True,
+                    'order_id': order['orderId']
                 }
                 self.trade_history.append(trade_info)
                 self.save_trade_history()
@@ -477,6 +486,11 @@ class TradingBot:
                 print(f"❌ เกิดข้อผิดพลาดในการซื้อ: {str(e)}")
             
         elif prediction == 0 and probability[prediction] > sell_threshold:
+            # ตรวจสอบว่ามีการเทรดที่เปิดอยู่หรือไม่
+            if not has_open_trade:
+                print("\n⚠️ ไม่มีการเทรดที่เปิดอยู่")
+                return
+                
             # ตรวจสอบว่ามี crypto พอขายไหม
             if self.base_balance < quantity:
                 print(f"\n⚠️ มี {self.base_currency} ไม่พอขาย (ต้องการ {quantity}, มี {self.base_balance})")
@@ -484,10 +498,7 @@ class TradingBot:
                 
             print(f"\n🔴 ส่งคำสั่งขาย {quantity} {self.symbol}")
             try:
-                # บันทึกราคาก่อนเทรด
-                ticker = self.client.get_symbol_ticker(symbol=self.symbol)
-                exit_price = float(ticker['price'])
-                
+                # เปิด order ขาย
                 order = self.client.create_order(
                     symbol=self.symbol,
                     side=self.SIDE_SELL,
@@ -495,6 +506,9 @@ class TradingBot:
                     quantity=quantity
                 )
                 
+                # บันทึกราคาที่ขาย
+                exit_price = float(order['fills'][0]['price'])
+            
                 # คำนวณมูลค่าการเทรดและอัพเดทยอดเงิน/crypto
                 trade_value = exit_price * quantity
                 self.current_balance += trade_value  # เพิ่มเงิน USDT
@@ -520,7 +534,8 @@ class TradingBot:
                         'confidence': probability[prediction] * 100,
                         'is_open': False,
                         'entry_price': open_trade['price'],
-                        'profit_loss': profit_loss
+                        'profit_loss': profit_loss,
+                        'order_id': order['orderId']
                     }
                     self.trade_history.append(trade_info)
                     
